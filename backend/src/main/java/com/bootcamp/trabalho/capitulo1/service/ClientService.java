@@ -1,0 +1,82 @@
+package com.bootcamp.trabalho.capitulo1.service;
+
+
+
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.bootcamp.trabalho.capitulo1.dto.ClientDTO;
+import com.bootcamp.trabalho.capitulo1.entities.ClientEntity;
+import com.bootcamp.trabalho.capitulo1.exceptions.ControllerNotFoundException;
+import com.bootcamp.trabalho.capitulo1.repository.ClientRepository;
+
+@Service
+public class ClientService {
+
+	@Autowired
+	private ClientRepository clientRepository;
+	
+	@Transactional(readOnly = true)
+	public Page<ClientDTO> findAllPaged(PageRequest pageRequest){
+		Page<ClientEntity> list = clientRepository.findAll(pageRequest);
+		return list.map(x -> new ClientDTO(x));
+	}
+	
+	@Transactional(readOnly = true)
+	public ClientDTO findById(Long id) {
+		Optional<ClientEntity> obj = clientRepository.findById(id);
+		ClientEntity entity = obj.orElseThrow(() -> new ControllerNotFoundException("Entity not found"));
+		return new ClientDTO(entity);
+	}
+
+	@Transactional
+	public ClientDTO insert(ClientDTO dto) {
+		ClientEntity entity = new ClientEntity();
+		copyDtoToEntity(dto,entity);
+		entity = clientRepository.save(entity);
+		return new ClientDTO(entity);
+		
+
+	}
+	
+	@Transactional
+	public ClientDTO update(Long id, ClientDTO dto) {
+		try {
+			ClientEntity entity = clientRepository.getOne(id);
+			copyDtoToEntity(dto, entity);
+			entity = clientRepository.save(entity);
+			return new ClientDTO(entity);
+		}catch(Exception e){
+			 throw new ControllerNotFoundException("Id not found" + id);
+			
+		}
+		
+	}
+
+	private void copyDtoToEntity(ClientDTO dto, ClientEntity entity) {
+		entity.setName(dto.getName());
+		entity.setCpf(dto.getCpf());
+		entity.setIncome(dto.getIncome());
+		entity.setBirthDate(dto.getBirthDate());
+		entity.setChildren(dto.getChildren());
+		
+	}
+
+	public void delete(Long id) {
+		try {
+			clientRepository.deleteById(id);
+		}
+		catch(EmptyResultDataAccessException e) {
+			throw new ControllerNotFoundException("Id not found" + id);
+		}
+		
+	}
+
+	
+}
