@@ -4,7 +4,10 @@ package com.bootcamp.trabalho.capitulo1.service;
 
 import java.util.Optional;
 
+import javax.persistence.EntityNotFoundException;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -13,8 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.bootcamp.trabalho.capitulo1.dto.ClientDTO;
 import com.bootcamp.trabalho.capitulo1.entities.ClientEntity;
-import com.bootcamp.trabalho.capitulo1.exceptions.ControllerNotFoundException;
 import com.bootcamp.trabalho.capitulo1.repository.ClientRepository;
+import com.bootcamp.trabalho.capitulo1.service.exceptions.DataBaseException;
+import com.bootcamp.trabalho.capitulo1.service.exceptions.ResourceNotFoundException;
 
 @Service
 public class ClientService {
@@ -31,7 +35,7 @@ public class ClientService {
 	@Transactional(readOnly = true)
 	public ClientDTO findById(Long id) {
 		Optional<ClientEntity> obj = clientRepository.findById(id);
-		ClientEntity entity = obj.orElseThrow(() -> new ControllerNotFoundException("Entity not found"));
+		ClientEntity entity = obj.orElseThrow(() -> new ResourceNotFoundException("Entity not found"));
 		return new ClientDTO(entity);
 	}
 
@@ -52,8 +56,8 @@ public class ClientService {
 			copyDtoToEntity(dto, entity);
 			entity = clientRepository.save(entity);
 			return new ClientDTO(entity);
-		}catch(Exception e){
-			 throw new ControllerNotFoundException("Id not found" + id);
+		}catch(EntityNotFoundException e){
+			 throw new ResourceNotFoundException("Id not found" + id);
 			
 		}
 		
@@ -73,7 +77,10 @@ public class ClientService {
 			clientRepository.deleteById(id);
 		}
 		catch(EmptyResultDataAccessException e) {
-			throw new ControllerNotFoundException("Id not found" + id);
+			throw new ResourceNotFoundException("Id not found" + id);
+		}
+		catch (DataIntegrityViolationException e) {
+			throw new DataBaseException("Integrity violation");
 		}
 		
 	}
